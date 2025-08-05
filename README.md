@@ -7,5 +7,5 @@ npx hardhat compile
 npx hardhat test
 
 npx hardhat node
-npx hardhat ignition deploy ./ignition/modules/RealEstate.js \--network localhost
+npx hardhat ignition deploy ./ignition/modules/RealEstate.js --network localhost
 ```
