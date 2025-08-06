@@ -8,4 +8,8 @@ npx hardhat test
 
 npx hardhat node
 npx hardhat ignition deploy ./ignition/modules/RealEstate.js --network localhost
+
+For funding contracts on the local network:
+npx hardhat run scripts/fund-contract.js --network localhost
+
 ```
