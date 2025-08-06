@@ -30,6 +30,8 @@ contract RealEstate is ERC721URIStorage, Ownable, ReentrancyGuard {
         platformOwners.push(msg.sender);
     }
 
+    receive() external payable {}
+
     function addPlatformOwner(address newOwner) external onlyPlatformOwner {
         require(newOwner != address(0), "Invalid address");
         require(!isPlatformOwner[newOwner], "Already an owner");
@@ -37,7 +39,7 @@ contract RealEstate is ERC721URIStorage, Ownable, ReentrancyGuard {
         platformOwners.push(newOwner);
     }
 
-    function addProperty(uint price, string calldata location, string calldata metadataURI) external onlyPlatformOwner {
+    function addProperty(uint price, string calldata location, string calldata metadataURI) external { // Removed onlyPlatformOwner modifier
         require(price > 0, "Price must be greater than zero");
         require(bytes(location).length > 0, "Location required");
         require(bytes(metadataURI).length > 0, "Metadata URI required");
