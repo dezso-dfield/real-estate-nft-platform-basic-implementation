@@ -39,7 +39,7 @@ contract RealEstate is ERC721URIStorage, Ownable, ReentrancyGuard {
         platformOwners.push(newOwner);
     }
 
-    function addProperty(uint price, string calldata location, string calldata metadataURI) external { // Removed onlyPlatformOwner modifier
+    function addProperty(uint price, string calldata location, string calldata metadataURI) external {
         require(price > 0, "Price must be greater than zero");
         require(bytes(location).length > 0, "Location required");
         require(bytes(metadataURI).length > 0, "Metadata URI required");
@@ -75,6 +75,18 @@ contract RealEstate is ERC721URIStorage, Ownable, ReentrancyGuard {
 
         (bool sent, ) = payable(currentOwner).call{value: msg.value}("");
         require(sent, "Payment to seller failed");
+    }
+
+    function relistProperty(uint id, uint newPrice) external nonReentrant {
+        require(_exists(id), "Nonexistent token");
+        require(ownerOf(id) == msg.sender, "Caller is not the owner of this property");
+
+        Property storage prop = properties[id];
+        require(prop.isPurchased, "Property is already listed for sale");
+        require(newPrice > 0, "New price must be greater than zero");
+
+        prop.isPurchased = false;
+        prop.price = newPrice;
     }
 
     function getProperty(uint id) external view returns (Property memory) {
