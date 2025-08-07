@@ -8,8 +8,20 @@ npx hardhat test
 
 npx hardhat node
 npx hardhat ignition deploy ./ignition/modules/RealEstate.js --network localhost
-
-For funding contracts on the local network:
-npx hardhat run scripts/fund-contract.js --network localhost
-
 ```
+For funding contracts on the local network:
+```shell
+npx hardhat run scripts/fund-contract.js --network localhost
+```
+
+Start the backend:
+```shell
+node server.js
+```
+
+Start the frontend:
+```shell
+npm run dev
+```
+
+Ensure MetaMask and enjoy it is still basic will be updated later
