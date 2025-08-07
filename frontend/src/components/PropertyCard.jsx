@@ -1,90 +1,75 @@
+// src/components/PropertyCard.jsx
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
-function PropertyCard({ id, property, web3, contract, account, refreshProperties, isOwnedByUser }) {
-    const buyProperty = async () => {
-        if (!web3 || !contract || !account) {
-            console.error("Web3, contract, or account not initialized.");
-            return;
-        }
+export default function PropertyCard({
+  property,
+  web3,
+  contract,
+  account,
+  refresh,
+  isOwnedByUser = false
+}) {
+  const navigate = useNavigate();
 
-        if (property.isPurchased) {
-            alert("This property has already been sold.");
-            return;
-        }
-        
-        try {
-            // Get the current owner of the token from the contract
-            const currentOwner = await contract.methods.ownerOf(id).call();
-            if (currentOwner.toLowerCase() === account.toLowerCase()) {
-                alert("You already own this property!");
-                return;
-            }
+  // Stop click on the buy button from propagating up to the card click
+  const buy = async (e) => {
+    e.stopPropagation();
+    try {
+      await contract.methods
+        .buyProperty(property.tokenId)
+        .send({ from: account, value: property.price });
+      refresh();
+    } catch (err) {
+      alert('Purchase failed: ' + err.message);
+    }
+  };
 
-            // Convert ETH price to Wei for the transaction
-            const weiPrice = web3.utils.toWei(property.price.toString(), "wei"); 
-            
-            console.log("Attempting to buy property:", id);
-            console.log("Price (Wei):", weiPrice);
-            console.log("From account:", account);
+  const owned = isOwnedByUser || property.owner.toLowerCase() === account.toLowerCase();
+  const sold  = property.isPurchased && !owned;
+  const cover = property.cover || (property.images && property.images[0]);
 
-            // Send the transaction to buy the property
-            await contract.methods.buyProperty(id).send({ from: account, value: weiPrice });
-            console.log("Property purchased successfully!");
-            refreshProperties(); // Refresh the list of properties after purchase
-        } catch (error) {
-            console.error("Error buying property:", error);
-            // Display a user-friendly message for transaction failures
-            alert("Transaction failed: " + error.message);
-        }
-    };
+  // Navigate to detail page when the card is clicked
+  const handleCardClick = () => {
+    navigate(`/listing/${property.tokenId}`);
+  };
 
-    // Determine card background and button styling based on property status and ownership
-    const cardBackgroundColor = isOwnedByUser ? "bg-gray-50" : "bg-white"; // Lighter, more neutral background
-    const buttonColor = property.isPurchased ? "bg-gray-300" : "bg-blue-600"; // Muted gray for sold, clean blue for buy
-    const buttonHoverColor = property.isPurchased ? "hover:bg-gray-300" : "hover:bg-blue-700";
-    const buttonText = property.isPurchased ? "Sold" : "Buy Property";
+  return (
+    <div
+      onClick={handleCardClick}
+      className="border p-4 rounded shadow flex flex-col cursor-pointer hover:shadow-lg transition"
+    >
+      {cover && (
+        <img
+          src={cover}
+          alt={property.name || `Property ${property.tokenId}`}
+          className="w-full h-40 object-cover rounded mb-4"
+        />
+      )}
 
-    return (
-        <div className={`p-6 rounded-lg shadow-sm flex flex-col justify-between border border-gray-200 ${cardBackgroundColor}`}>
-            <div>
-                <h3 className="text-xl font-semibold mb-3 text-gray-900">Property ID: {property.id.toString()}</h3>
-                <p className="text-gray-700 mb-2">
-                    <strong className="font-medium">Location:</strong> {property.location}
-                </p>
-                <p className="text-gray-700 mb-2">
-                    <strong className="font-medium">Price:</strong> {web3 ? web3.utils.fromWei(property.price.toString(), 'ether') : 'N/A'} ETH
-                </p>
-                <p className="text-gray-700 mb-2">
-                    <strong className="font-medium">Owner:</strong>{" "}
-                    <span className="font-mono text-xs break-all text-gray-600">{property.owner || 'Loading...'}</span>
-                </p>
-                <p className="text-gray-700 mb-4">
-                    <strong className="font-medium">Status:</strong>{" "}
-                    <span className={`font-semibold ${property.isPurchased ? 'text-red-600' : 'text-green-600'}`}>
-                        {property.isPurchased ? 'Sold' : 'Available'}
-                    </span>
-                </p>
-                <p className="truncate text-sm text-gray-500">
-                    <strong className="font-medium">Metadata URI:</strong> {property.metadataURI}
-                </p>
-            </div>
-            {/* Conditional rendering for the buy button or owned message */}
-            {!isOwnedByUser && !property.isPurchased && ( 
-                <button
-                    onClick={buyProperty}
-                    className={`mt-6 w-full ${buttonColor} text-white px-6 py-3 rounded-md font-semibold text-base ${buttonHoverColor} transition duration-200 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-300`}
-                    disabled={!web3 || !contract || !account || property.isPurchased}
-                >
-                    {buttonText}
-                </button>
-            )}
-            {isOwnedByUser && (
-                <p className="mt-6 text-center text-blue-700 font-semibold text-base bg-blue-100 p-3 rounded-md border border-blue-200">
-                    You own this property!
-                </p>
-            )}
-        </div>
-    );
+      <h3 className="font-bold mb-2">
+        {property.name || `#${property.tokenId}`}
+      </h3>
+      <p className="text-sm mb-2 truncate">{property.description}</p>
+      <p className="mb-1">
+        <strong>Location:</strong> {property.location}
+      </p>
+      <p className="mb-4">
+        <strong>Price:</strong>{' '}
+        {web3 ? web3.utils.fromWei(property.price, 'ether') : '?'} ETH
+      </p>
+
+      <button
+        onClick={buy}
+        disabled={owned || sold}
+        className={`mt-auto py-2 rounded text-white font-semibold ${
+          owned    ? 'bg-gray-500 cursor-not-allowed' :
+          sold     ? 'bg-red-500 cursor-not-allowed' :
+                      'bg-green-600 hover:bg-green-700'
+        }`}
+      >
+        {owned ? 'Owned' : sold ? 'Sold' : 'Buy'}
+      </button>
+    </div>
+  );
 }
-
-export default PropertyCard;
